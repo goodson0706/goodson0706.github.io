@@ -23,8 +23,14 @@ jobs:
       - name: Run update script
         run: python scripts/update_followers.py
 
-      - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
         with:
-          commit_message: 'chore: update social followers count [bot]'
-          file_pattern: Info/index.html
+          commit-message: 'chore: update social followers count [bot]'
+          title: 'Update social followers count'
+          body: |
+            This PR updates the followers count in Info/index.html.
+            Please review and merge if everything looks correct.
+          branch: update/social-followers
+          base: main
+          add-paths: Info/index.html
