@@ -5,6 +5,9 @@ on:
     - cron: '0 8 * * 1'  # every Monday at 08:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-followers:
     runs-on: ubuntu-latest
