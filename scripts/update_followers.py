@@ -41,7 +41,13 @@ def get_youtube_followers(username):
     url = f"https://www.youtube.com/@{username}"
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
     soup = BeautifulSoup(resp.text, "html.parser")
-    # YouTube renders sub count client-side, but it's still in the HTML in og:description sometimes
+    # Look for <span ...>130K subscribers</span>
+    for span in soup.find_all("span"):
+        if span.text and "subscribers" in span.text:
+            match = re.search(r"([\d.,kK]+)\s*subscribers", span.text)
+            if match:
+                return match.group(1)
+    # Fallback: og:description
     desc = soup.find("meta", property="og:description")
     if desc and desc.get("content"):
         match = re.search(r"([\d.,]+)\s*subscribers", desc["content"])
@@ -53,7 +59,14 @@ def get_twitch_followers(username):
     url = f"https://www.twitch.tv/{username}"
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
     soup = BeautifulSoup(resp.text, "html.parser")
-    # Try to find the followers count in meta or page scripts
+    # Look for <p class="CoreText-sc-1txzju1-0 gtJaaB">71.7K followers</p>
+    p_tags = soup.find_all("p", class_="CoreText-sc-1txzju1-0 gtJaaB")
+    for p in p_tags:
+        if "followers" in p.text:
+            match = re.search(r"([\d.,KMk]+)\s*followers", p.text)
+            if match:
+                return match.group(1)
+    # Fallback: search meta or page scripts
     match = re.search(r'"followersCount":(\d+)', resp.text)
     if match:
         count = int(match.group(1))
@@ -64,19 +77,26 @@ def get_tiktok_followers(username):
     url = f"https://www.tiktok.com/@{username}"
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
     soup = BeautifulSoup(resp.text, "html.parser")
-    # Look for <strong title="11,300">11.3K</strong> <span>Followers</span>
-    for strong in soup.find_all("strong"):
-        parent = strong.parent
-        if parent and parent.find("span", string=re.compile("Followers")):
-            return strong.text.strip()
+    # Look for <strong title="Followers" data-e2e="followers-count">12.7K</strong>
+    strong = soup.find("strong", {"title": "Followers", "data-e2e": "followers-count"})
+    if strong and strong.text.strip():
+        return strong.text.strip()
     return "?"
 
 def get_facebook_followers(username):
     url = f"https://www.facebook.com/{username}"
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
     soup = BeautifulSoup(resp.text, "html.parser")
-    # Look for "people follow this"
-    match = re.search(r'([\d,]+)\s+people follow this', resp.text)
+    # Look for <a> containing <strong>number</strong> followers
+    a_tags = soup.find_all("a")
+    for a in a_tags:
+        if a.text and "followers" in a.text.lower():
+            # Check for a <strong> inside, that's the number
+            strong = a.find("strong")
+            if strong and strong.text.strip():
+                return strong.text.strip()
+    # Fallback: regex search in text
+    match = re.search(r'([\d.,kK]+)\s+followers', resp.text, re.IGNORECASE)
     if match:
         return match.group(1)
     return "?"
