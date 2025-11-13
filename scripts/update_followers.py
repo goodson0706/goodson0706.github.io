@@ -30,7 +30,11 @@ SOCIAL_SITES = [
         "url_re": r'https://www.instagram.com/([^"\']+)',
         "fetch": lambda user: get_instagram_followers(user)
     },
-    # Discord does not expose follower/member count on invite page easily.
+    {
+        "name": "Discord",
+        "url_re": r'https://discord.gg/([^"\']+)',
+        "fetch": lambda code: get_discord_members(code)
+    }
 ]
 
 def get_youtube_followers(username):
@@ -87,6 +91,19 @@ def get_instagram_followers(username):
         match = re.search(r"([\d.,kK]+)\s+Followers", desc["content"])
         if match:
             return match.group(1)
+    return "?"
+
+def get_discord_members(invite_code):
+    url = f"https://discord.com/api/v9/invites/{invite_code}?with_counts=true"
+    try:
+        response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        if response.status_code == 200:
+            data = response.json()
+            count = data.get("approximate_member_count")
+            if count:
+                return k_format(int(count))
+    except Exception as e:
+        print(f'Discord scraping error: {e}')
     return "?"
 
 def k_format(n):
