@@ -30,6 +30,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.PERSONAL_TOKEN }}  
           commit-message: 'chore: update social followers count [bot]'
           title: 'Update social followers count'
           body: |
