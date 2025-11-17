@@ -43,20 +43,18 @@ SOCIAL_SITES = [
 
 def get_youtube_followers(username):
     url = f"https://www.youtube.com/@{username}"
-    resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(resp.text, "html.parser")
-    # Look for "<span ...>130K subscribers</span>"
-    for span in soup.find_all("span"):
-        if span.text and "subscribers" in span.text:
-            match = re.search(r"([\d.,kK]+)\s*subscribers", span.text)
-            if match:
-                return match.group(1)
-    # Fallback: og:description
-    desc = soup.find("meta", property="og:description")
-    if desc and desc.get("content"):
-        match = re.search(r"([\d.,]+)\s*subscribers", desc["content"])
-        if match:
-            return match.group(1)
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+    # Match the class from your provided HTML
+    for span in soup.find_all("span", class_=re.compile(r"yt-content-metadata-view-model__metadata-text")):
+        text = span.get_text(strip=True)
+        if text.endswith("subscribers"):
+            # Extracts the number (could be like '130K', '4.65M', etc.)
+            count = text.split(" ")[0]
+            return count
     return "?"
 
 def get_twitch_followers(username):
