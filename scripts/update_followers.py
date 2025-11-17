@@ -74,7 +74,7 @@ def get_twitch_followers(username):
         "Authorization": f"Bearer {access_token}"
     }
     # Step 2: Get user ID
-    user_url = f"https://api.twitch.tv/helix/users?login={channel_name}"
+    user_url = f"https://api.twitch.tv/helix/users?login={username}"
     user_resp = requests.get(user_url, headers=headers)
     user_data = user_resp.json()
     if not user_data["data"]:
