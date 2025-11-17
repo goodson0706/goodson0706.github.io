@@ -42,9 +42,13 @@ SOCIAL_SITES = [
     }
 ]
 
-def get_subscriber_count_pytube(channel_url: str) -> int:
-    c = Channel(channel_url)
-    return c.subscriber_count
+def get_youtube_followers(username):
+    url = f"https://www.youtube.com/@{username}"
+    c = Channel(url)
+    count = c.subscriber_count
+    if count is not None:
+        return k_format(int(count))
+    return "?"
 
 def get_twitch_followers(username):
     url = f"https://www.twitch.tv/{username}"
