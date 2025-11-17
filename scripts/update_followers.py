@@ -130,10 +130,12 @@ def get_discord_members(invite_code):
 
 def k_format(n):
     """Format a number in 'k' notation, e.g., 11000->'11k'."""
-    if n > 1_000_000:
-        return f"{n/1_000_000:.1f}M"
-    elif n > 1_000:
-        return f"{n/1_000:.1f}k"
+    if n >= 1_000_000:
+        s = f"{n/1_000_000:.1f}".rstrip('0').rstrip('.')
+        return s + "M"
+    elif n >= 1_000:
+        s = f"{n/1_000:.1f}".rstrip('0').rstrip('.')
+        return s + "k"
     else:
         return str(n)
 
