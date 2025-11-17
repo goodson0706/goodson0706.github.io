@@ -59,21 +59,35 @@ def get_youtube_followers(username):
     return "?"
 
 def get_twitch_followers(username):
-    url = f"https://www.twitch.tv/{username}"
-    resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(resp.text, "html.parser")
-    # Look for "<p ...>71.7K followers</p>"
-    p_tags = soup.find_all("p", class_="CoreText-sc-1txzju1-0 gtJaaB")
-    for p in p_tags:
-        if "followers" in p.text:
-            match = re.search(r"([\d.,KMk]+)\s*followers", p.text)
-            if match:
-                return match.group(1)
-    # Fallback: search script/json in page
-    match = re.search(r'"followersCount":(\d+)', resp.text)
-    if match:
-        count = int(match.group(1))
-        return k_format(count)
+    client_id = os.environ.get('TWITCH_CLIENT_ID')
+    url = "https://id.twitch.tv/oauth2/token"
+    data = {
+        "client_id": client_id,
+        "client_secret": os.environ.get('TWITCH_CLIENT_SECRET'),
+        "grant_type": "client_credentials"
+    }
+    resp = requests.post(url, data=data)
+    access_token = resp.json()["access_token"]
+
+    headers = {
+        "Client-ID": client_id,
+        "Authorization": f"Bearer {access_token}"
+    }
+    # Step 2: Get user ID
+    user_url = f"https://api.twitch.tv/helix/users?login={channel_name}"
+    user_resp = requests.get(user_url, headers=headers)
+    user_data = user_resp.json()
+    if not user_data["data"]:
+        raise Exception("Channel not found")
+    user_id = user_data["data"][0]["id"]
+
+    # Step 3: Get follower count
+    followers_url = f"https://api.twitch.tv/helix/users/follows?to_id={user_id}"
+    followers_resp = requests.get(followers_url, headers=headers)
+    followers_data = followers_resp.json()
+    count = followers_data["total"]
+    if count is not None:
+        return k_format(int(count))
     return "?"
 
 def get_tiktok_followers(username):
