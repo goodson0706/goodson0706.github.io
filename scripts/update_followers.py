@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Paths
 html_path = "Info/index.html"          # source to scan for social links
-followers_js_path = "js/followers-data.js"  # file the frontend now reads
+followers_js_path = "Info/js/followers-data.js"  # file the frontend now reads
 
 SOCIAL_SITES = [
     {
