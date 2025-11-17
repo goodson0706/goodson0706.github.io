@@ -229,7 +229,7 @@ def main():
             f.write(js_content)
         print(f"Wrote updated followers to {followers_js_path}")
     else:
+        print("followers-data.js is up to date; no changes made.")
   
-
 if __name__ == "__main__":
     main()
