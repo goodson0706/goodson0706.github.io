@@ -41,6 +41,15 @@ SOCIAL_SITES = [
     }
 ]
 
+SOCIAL_IDENTIFIERS = {
+    "YouTube": "goodson0706",
+    "Twitch": "goodson0706",
+    "TikTok": "goodson0706",
+    "Facebook": "goodson0706",
+    "Instagram": "goodson0706",
+    "Discord": "STJysyKZPg"
+}
+
 def get_youtube_followers(username):
     api_key = os.environ.get('YOUTUBE_API_KEY')
     url = f"https://www.googleapis.com/youtube/v3/channels"
