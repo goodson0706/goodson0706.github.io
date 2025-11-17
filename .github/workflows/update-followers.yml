@@ -36,8 +36,8 @@ jobs:
           commit-message: 'chore: update social followers count [bot]'
           title: 'Update social followers count'
           body: |
-            This PR updates the followers count in Info/index.html.
-            Please review and merge if everything looks correct.
+            This PR updates the followers count in Info/js/followers-data.js.
+            The update script modifies Info/js/followers-data.js; please review and merge if everything looks correct.
           branch: update/social-followers
           base: main
-          add-paths: Info/index.html
+          add-paths: Info/js/followers-data.js
