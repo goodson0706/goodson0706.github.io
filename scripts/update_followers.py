@@ -148,6 +148,21 @@ def build_followers_js(followers):
     body = "{\n" + ",\n".join(pairs) + "\n};\n"
     return header + "window.followersData = " + body
 
+def parse_existing_followers(js_text):
+    """Extract the followers object from existing followers-data.js (if parseable)"""
+    if not js_text:
+        return {}
+    m = re.search(r'window\.followersData\s*=\s*({[\s\S]*?});', js_text)
+    if not m:
+        return {}
+    obj_text = m.group(1)
+    try:
+        # JSON should be valid since we use json.dumps when writing
+        return json.loads(obj_text)
+    except Exception:
+        # If parsing fails, return empty to avoid accidental overwrites
+        return {}
+
 def main():
     # parse Info/index.html to find social anchors
     try:
@@ -158,7 +173,22 @@ def main():
         return
 
     soup = BeautifulSoup(html, "html.parser")
-    followers = {}
+
+    # Read existing followers file (if any) and parse existing map
+    existing = None
+    existing_map = {}
+    try:
+        with open(followers_js_path, "r", encoding="utf-8") as f:
+            existing = f.read()
+            existing_map = parse_existing_followers(existing)
+    except FileNotFoundError:
+        existing = None
+        existing_map = {}
+
+    # Start from existing map; we'll only overwrite when we have a non-"?" value
+    updated_map = dict(existing_map)
+
+    found_any_match = False
 
     # For each anchor, match against known social site URL patterns and fetch
     for a in soup.find_all('a', href=True):
@@ -168,31 +198,44 @@ def main():
             if m:
                 identifier = m.group(1)
                 # Avoid fetching same site multiple times
-                if site["name"] in followers:
-                    continue
+                if site["name"] in updated_map and site["name"] in existing_map and site["name"] in updated_map:
+                    # We still might want to refresh if existing value is old; but to avoid double-fetch per same anchor, skip
+                    pass
                 try:
                     count = site["fetch"](identifier)
                 except Exception as e:
                     print(f"Error fetching {site['name']} ({identifier}): {e}")
                     count = "?"
-                followers[site["name"]] = count
-                print(f"Found {site['name']} ({identifier}) -> {count}")
 
-    if not followers:
-        print("No social links found in html; nothing to write.")
+                # If fetch failed (returned "?") and we have an existing value, keep it.
+                # Only update the map when we have a valid (non-"?") count.
+                if count == "?":
+                    if site["name"] in existing_map:
+                        chosen = existing_map[site["name"]]
+                        print(f"Found {site['name']} ({identifier}) -> ? (keeping existing: {chosen})")
+                    else:
+                        # No existing value to keep; skip adding this site
+                        print(f"Found {site['name']} ({identifier}) -> ? (no existing value; skipping)")
+                        continue
+                else:
+                    chosen = count
+                    updated_map[site["name"]] = chosen
+                    print(f"Found {site['name']} ({identifier}) -> {chosen}")
+
+                # If we got here and chosen is defined, ensure updated_map has it
+                if chosen is not None:
+                    updated_map[site["name"]] = chosen
+                    found_any_match = True
+
+    # If updated_map is empty, nothing meaningful to write
+    if not updated_map:
+        print("No updatable social counts found; nothing to write.")
         return
 
-    js_content = build_followers_js(followers)
+    js_content = build_followers_js(updated_map)
 
     # Write only if the contents changed
     try:
-        existing = None
-        try:
-            with open(followers_js_path, "r", encoding="utf-8") as f:
-                existing = f.read()
-        except FileNotFoundError:
-            existing = None
-
         if existing != js_content:
             with open(followers_js_path, "w", encoding="utf-8") as f:
                 f.write(js_content)
