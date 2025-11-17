@@ -227,7 +227,6 @@ def main():
                 # Only update the map when we have a valid (non-"?") count.
                 if count == "?":
                     if site["name"] in existing_map:
-                        chosen = existing_map[site["name"]]
                         print(f"Found {site['name']} ({identifier}) -> ? (keeping existing: {chosen})")
                     else:
                         # No existing value to keep; skip adding this site
