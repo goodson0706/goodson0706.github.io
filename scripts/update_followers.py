@@ -160,7 +160,7 @@ def build_followers_js(followers):
     # Build JS object lines; ensure keys and values are JSON-escaped strings
     pairs = []
     for k, v in followers.items():
-        pairs.append(f"  {json.dumps(k)}: {json.dumps(v)}")
+        pairs.append(f"  {json.dumps(k.lower())}: {json.dumps(v)}")
     body = "{\n" + ",\n".join(pairs) + "\n};\n"
     return header + "window.followersData = " + body
 
