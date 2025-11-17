@@ -6,8 +6,6 @@ import json
 from datetime import datetime
 from pytube import Channel
 
-# Paths
-html_path = "Info/index.html"          # source to scan for social links
 followers_js_path = "Info/js/followers-data.js"  # file the frontend now reads
 
 SOCIAL_SITES = [
@@ -180,16 +178,6 @@ def parse_existing_followers(js_text):
         return {}
 
 def main():
-    # parse Info/index.html to find social anchors
-    try:
-        with open(html_path, "r", encoding="utf-8") as f:
-            html = f.read()
-    except FileNotFoundError:
-        print(f"Source HTML not found at {html_path}")
-        return
-
-    soup = BeautifulSoup(html, "html.parser")
-
     # Read existing followers file (if any) and parse existing map
     existing = None
     existing_map = {}
@@ -206,43 +194,34 @@ def main():
 
     found_any_match = False
 
-    # For each anchor, match against known social site URL patterns and fetch
-    for a in soup.find_all('a', href=True):
-        href = a['href'].strip()
-        for site in SOCIAL_SITES:
-            m = re.match(site["url_re"], href)
-            if m:
-                identifier = m.group(1)
-                # Avoid fetching same site multiple times
-                if site["name"] in updated_map and site["name"] in existing_map and site["name"] in updated_map:
-                    # We still might want to refresh if existing value is old; but to avoid double-fetch per same anchor, skip
-                    pass
-                try:
-                    count = site["fetch"](identifier)
-                except Exception as e:
-                    print(f"Error fetching {site['name']} ({identifier}): {e}")
-                    count = "?"
+    for site in SOCIAL_SITES:
+        name = site["name"]
+        identifier = SOCIAL_IDENTIFIERS.get(name)
+        if not identifier:
+            print(f"No identifier provided for {name}, skipping.")
+            continue
+        try:
+            count = site["fetch"](identifier)
+        except Exception as e:
+            print(f"Error fetching {name} ({identifier}): {e}")
+            count = "?"
 
-                # If fetch failed (returned "?") and we have an existing value, keep it.
-                # Only update the map when we have a valid (non-"?") count.
-                if count == "?":
-                    if site["name"] in existing_map:
-                        print(f"Found {site['name']} ({identifier}) -> ? (keeping existing: {chosen})")
-                    else:
-                        # No existing value to keep; skip adding this site
-                        print(f"Found {site['name']} ({identifier}) -> ? (no existing value; skipping)")
-                        continue
-                else:
-                    chosen = count
-                    updated_map[site["name"]] = chosen
-                    print(f"Found {site['name']} ({identifier}) -> {chosen}")
+        if count == "?":
+            if name in existing_map:
+                chosen = existing_map[name]
+                print(f"Found {name} ({identifier}) -> ? (keeping existing: {chosen})")
+            else:
+                print(f"Found {name} ({identifier}) -> ? (no existing value; skipping)")
+                continue
+        else:
+            chosen = count
+            updated_map[name] = chosen
+            print(f"Found {name} ({identifier}) -> {chosen}")
 
-                # If we got here and chosen is defined, ensure updated_map has it
-                if chosen is not None:
-                    updated_map[site["name"]] = chosen
-                    found_any_match = True
+        if chosen is not None:
+            updated_map[name] = chosen
+            found_any_match = True
 
-    # If updated_map is empty, nothing meaningful to write
     if not updated_map:
         print("No updatable social counts found; nothing to write.")
         return
