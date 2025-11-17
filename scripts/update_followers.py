@@ -1,4 +1,5 @@
 import re
+import os
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -43,9 +44,16 @@ SOCIAL_SITES = [
 ]
 
 def get_youtube_followers(username):
-    url = f"https://www.youtube.com/@{username}"
-    c = Channel(url)
-    count = c.subscriber_count
+    api_key = os.environ.get('YOUTUBE_API_KEY')
+    url = f"https://www.googleapis.com/youtube/v3/channels"
+    params = {
+        "part": "statistics",
+        "id": 'UCPLcnEPw02ywXVIKR7VWnqg',
+        "key": api_key
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    count = data['items'][0]['statistics']['subscriberCount']
     if count is not None:
         return k_format(int(count))
     return "?"
