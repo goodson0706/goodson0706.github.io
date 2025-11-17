@@ -85,7 +85,7 @@ def get_twitch_followers(username):
     followers_url = f"https://api.twitch.tv/helix/users/follows?to_id={user_id}"
     followers_resp = requests.get(followers_url, headers=headers)
     followers_data = followers_resp.json()
-     print(f'followers_data: {followers_data}')
+    print(f'followers_data: {followers_data}')
     count = followers_data["total"]
     if count is not None:
         return k_format(int(count))
