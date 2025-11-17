@@ -180,10 +180,10 @@ def parse_existing_followers(js_text):
         return {}
     obj_text = m.group(1)
     try:
-        # JSON should be valid since we use json.dumps when writing
-        return json.loads(obj_text)
+        # Use JSON-like parsing
+        data = json.loads(re.sub(r'(\w+):', r'"\1":', obj_text.replace("'", '"')))
+        return data
     except Exception:
-        # If parsing fails, return empty to avoid accidental overwrites
         return {}
 
 def main():
@@ -198,55 +198,38 @@ def main():
         existing = None
         existing_map = {}
 
-    # Start from existing map; we'll only overwrite when we have a non-"?" value
-    updated_map = dict(existing_map)
-
-    found_any_match = False
-
+    # Collect fresh counts into new_counts (all lowercased)
+    new_counts = {}
     for site in SOCIAL_SITES:
         name = site["name"]
         identifier = SOCIAL_IDENTIFIERS.get(name)
         if not identifier:
-            print(f"No identifier provided for {name}, skipping.")
             continue
         try:
             count = site["fetch"](identifier)
-        except Exception as e:
-            print(f"Error fetching {name} ({identifier}): {e}")
+        except Exception:
             count = "?"
+        if count != "?":
+            new_counts[name.lower()] = count
 
-        if count == "?":
-            if name in existing_map:
-                chosen = existing_map[name]
-                print(f"Found {name} ({identifier}) -> ? (keeping existing: {chosen})")
-            else:
-                print(f"Found {name} ({identifier}) -> ? (no existing value; skipping)")
-                continue
-        else:
-            chosen = count
-            updated_map[name] = chosen
-            print(f"Found {name} ({identifier}) -> {chosen}")
+    if not existing_map:
+        print("Existing file has no valid data, updating all keys.")
+        updated = dict(existing_map)
+        updated.update(new_counts)
+    else:
+        # Only update keys present in new_counts, preserve unused keys
+        updated = {}
+        for k, v in existing_map.items():
+            updated[k] = new_counts.get(k, v)  # update if new key, else keep old
 
-        if chosen is not None:
-            updated_map[name] = chosen
-            found_any_match = True
+    js_content = build_followers_js(updated)
 
-    if not updated_map:
-        print("No updatable social counts found; nothing to write.")
-        return
-
-    js_content = build_followers_js(updated_map)
-
-    # Write only if the contents changed
-    try:
-        if existing != js_content:
-            with open(followers_js_path, "w", encoding="utf-8") as f:
-                f.write(js_content)
-            print(f"Wrote updated followers to {followers_js_path}")
-        else:
-            print("followers-data.js is up to date; no changes made.")
-    except Exception as e:
-        print(f"Error writing {followers_js_path}: {e}")
+    if existing != js_content:
+        with open(followers_js_path, "w", encoding="utf-8") as f:
+            f.write(js_content)
+        print(f"Wrote updated followers to {followers_js_path}")
+    else:
+  
 
 if __name__ == "__main__":
     main()
