@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
+from pytube import Channel
 
 # Paths
 html_path = "Info/index.html"          # source to scan for social links
@@ -41,21 +42,9 @@ SOCIAL_SITES = [
     }
 ]
 
-def get_youtube_followers(username):
-    url = f"https://www.youtube.com/@{username}"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, "html.parser")
-    # Match the class from your provided HTML
-    for span in soup.find_all("span", class_=re.compile(r"yt-content-metadata-view-model__metadata-text")):
-        text = span.get_text(strip=True)
-        if text.endswith("subscribers"):
-            # Extracts the number (could be like '130K', '4.65M', etc.)
-            count = text.split(" ")[0]
-            return count
-    return "?"
+def get_subscriber_count_pytube(channel_url: str) -> int:
+    c = Channel(channel_url)
+    return c.subscriber_count
 
 def get_twitch_followers(username):
     url = f"https://www.twitch.tv/{username}"
