@@ -27,6 +27,8 @@ jobs:
         run: pip install requests beautifulsoup4 pytube
 
       - name: Run update script
+        env:
+           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python scripts/update_followers.py
 
       - name: Create Pull Request
